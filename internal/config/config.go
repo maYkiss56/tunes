@@ -1,0 +1,38 @@
+package config
+
+import (
+	"log"
+	"sync"
+	"time"
+
+	"github.com/ilyakaznacheev/cleanenv"
+)
+
+type Config struct {
+	HTTP struct {
+		Host             string        `yaml:"host"`
+		Port             string        `yaml:"port"`
+		Network          string        `yaml:"network"`
+		ReadTimeout      time.Duration `yaml:"read_timeout"`
+		WriteTimeout     time.Duration `yaml:"write_timeout"`
+		GracefullTimeout time.Duration `yaml:"gracefull_timeout"`
+	} `yaml:"http"`
+}
+
+const configPath = "configs/config.local.yaml"
+
+var (
+	instance *Config
+	once     sync.Once
+)
+
+func GetConfig() *Config {
+	once.Do(func() {
+		instance = &Config{}
+		if err := cleanenv.ReadConfig(configPath, instance); err != nil {
+			log.Fatalf("error: ошибка при чтении конфига %v", err)
+		}
+	})
+
+	return instance
+}
