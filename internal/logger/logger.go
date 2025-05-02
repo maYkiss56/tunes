@@ -47,13 +47,13 @@ func (l *Logger) proccessLogs(ctx context.Context) {
 	for {
 		select {
 		case r := <-l.queue:
-			l.console.Handler().Handle(context.Background(), r)
-			l.file.Handler().Handle(context.Background(), r)
+			_ = l.console.Handler().Handle(context.Background(), r)
+			_ = l.file.Handler().Handle(context.Background(), r)
 		case <-ctx.Done():
 			for len(l.queue) > 0 {
 				r := <-l.queue
-				l.console.Handler().Handle(context.Background(), r)
-				l.file.Handler().Handle(context.Background(), r)
+				_ = l.console.Handler().Handle(context.Background(), r)
+				_ = l.file.Handler().Handle(context.Background(), r)
 			}
 			return
 		}
@@ -61,18 +61,35 @@ func (l *Logger) proccessLogs(ctx context.Context) {
 }
 
 func (l *Logger) Debug(msg string, args ...any) {
-	l.queue <- slog.NewRecord(time.Now(), slog.LevelDebug, msg, 0)
+	l.queue <- l.newRecord(slog.LevelDebug, msg, args...)
 }
 
 func (l *Logger) Info(msg string, args ...any) {
-	l.queue <- slog.NewRecord(time.Now(), slog.LevelInfo, msg, 0)
+	l.queue <- l.newRecord(slog.LevelInfo, msg, args...)
 }
 
 func (l *Logger) Error(msg string, args ...any) {
-	l.queue <- slog.NewRecord(time.Now(), slog.LevelError, msg, 0)
+	l.queue <- l.newRecord(slog.LevelError, msg, args...)
+}
+
+func (l *Logger) newRecord(level slog.Level, msg string, args ...any) slog.Record {
+	rec := slog.NewRecord(time.Now(), level, msg, 0)
+
+	if len(args)%2 == 0 {
+		for i := 0; i < len(args); i += 2 {
+			key, ok := args[i].(string)
+			if !ok {
+				continue
+			}
+			rec.AddAttrs(slog.Any(key, args[i+1]))
+		}
+	}
+
+	return rec
 }
 
 func (l *Logger) Shutdown() {
 	close(l.queue)
 	l.wg.Wait()
 }
+
