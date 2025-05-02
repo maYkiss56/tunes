@@ -6,6 +6,8 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
+
 	"github.com/maYkiss56/tunes/internal/config"
 	"github.com/maYkiss56/tunes/internal/logger"
 )
@@ -15,9 +17,14 @@ type HTTPServer struct {
 	listener net.Listener
 	cfg      *config.Config
 	logger   *logger.Logger
+	router   chi.Router
 }
 
-func NewHTTPServer(cfg *config.Config, logger *logger.Logger) (*HTTPServer, error) {
+func NewHTTPServer(
+	cfg *config.Config,
+	logger *logger.Logger,
+	router chi.Router,
+) (*HTTPServer, error) {
 	addr := net.JoinHostPort(cfg.HTTP.Host, cfg.HTTP.Port)
 
 	listener, err := net.Listen(cfg.HTTP.Network, addr)
@@ -25,10 +32,9 @@ func NewHTTPServer(cfg *config.Config, logger *logger.Logger) (*HTTPServer, erro
 		return nil, fmt.Errorf("listen failed: %v", err)
 	}
 
-	//TODO: replaced nil on router
 	server := &http.Server{
 		Addr:         addr,
-		Handler:      nil,
+		Handler:      router,
 		ReadTimeout:  cfg.HTTP.ReadTimeout,
 		WriteTimeout: cfg.HTTP.WriteTimeout,
 	}
@@ -42,12 +48,9 @@ func NewHTTPServer(cfg *config.Config, logger *logger.Logger) (*HTTPServer, erro
 }
 
 func (s *HTTPServer) Start(serverErr chan<- error) {
-	s.logger.Info(
-		"Starting HTTP server",
-		"address",
-		s.listener.Addr().String(),
-		"timeout",
-		s.cfg.HTTP.ReadTimeout,
+	s.logger.Info("Starting HTTP server",
+		"address", s.listener.Addr().String(),
+		"timeout", s.cfg.HTTP.ReadTimeout,
 	)
 	if err := s.server.Serve(s.listener); err != nil && err != http.ErrServerClosed {
 		serverErr <- fmt.Errorf("server error: %w", err)
