@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/maYkiss56/tunes/internal/config"
+	"github.com/maYkiss56/tunes/internal/delivery/api"
+	"github.com/maYkiss56/tunes/internal/delivery/api/song"
 	"github.com/maYkiss56/tunes/internal/logger"
 	"github.com/maYkiss56/tunes/internal/server"
 )
@@ -16,7 +18,14 @@ type App struct {
 }
 
 func New(cfg *config.Config, logger *logger.Logger) (*App, error) {
-	httpServer, err := server.NewHTTPServer(cfg, logger)
+
+	//TODO: songS := song.NewService(repo, logger)
+
+	songHandler := song.NewHandler(nil, logger)
+
+	router := api.NewRouter(songHandler, logger)
+
+	httpServer, err := server.NewHTTPServer(cfg, logger, router)
 	if err != nil {
 		logger.Error("Failed to create HTTP server", "error", err)
 		return nil, fmt.Errorf("http server creation failed: %w", err)
