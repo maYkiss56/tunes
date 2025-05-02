@@ -9,6 +9,7 @@ import (
 
 	"github.com/maYkiss56/tunes/internal/app"
 	"github.com/maYkiss56/tunes/internal/config"
+	"github.com/maYkiss56/tunes/internal/logger"
 )
 
 func main() {
@@ -17,14 +18,19 @@ func main() {
 
 	cfg := config.GetConfig()
 
-	application, err := app.New(cfg)
+	logger, err := logger.New(ctx, "logs/app.log")
 	if err != nil {
-		log.Printf("app init failed: %v\n", err)
+		log.Fatalf("Failed to initialize logger: %v\n", err)
+	}
+
+	application, err := app.New(cfg, logger)
+	if err != nil {
+		logger.Error("Application init failed", "error", err)
 		os.Exit(1)
 	}
 
 	if err := application.Run(ctx); err != nil {
-		log.Printf("app run failed: %v\n", err)
+		logger.Error("Application run failed", "error", err)
 		os.Exit(1)
 	}
 }
