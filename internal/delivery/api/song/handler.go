@@ -15,7 +15,7 @@ import (
 
 type SongService interface {
 	CreateSong(ctx context.Context, song *domain.Song) error
-	GetAllSongs(ctx context.Context, filter domain.Filter) ([]domain.Song, int, error)
+	GetAllSongs(ctx context.Context) ([]*domain.Song, error)
 	GetSongByID(ctx context.Context, id int) (*domain.Song, error)
 	UpdateSong(ctx context.Context, id int, update domain.UpdateSongRequest) error
 	DeleteSong(ctx context.Context, id int) error
@@ -63,21 +63,18 @@ func (h *Handler) CreateSong(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetAllSongs(w http.ResponseWriter, r *http.Request) {
-	filter := domain.Filter{
-		Title:  r.URL.Query().Get("title"),
-		Limit:  parseQueryParam(r, "limit", 20),
-		Offset: parseQueryParam(r, "offset", 0),
-	}
-
-	songs, total, err := h.service.GetAllSongs(r.Context(), filter)
+	songs, err := h.service.GetAllSongs(r.Context())
 	if err != nil {
 		h.logger.Error("failed to get songs", "error", err)
 		renderError(w, r, http.StatusInternalServerError, "failed to get songs")
 		return
 	}
 
-	response := domain.ToListResponse(songs, total, filter.Limit, filter.Offset)
-	renderJSON(w, r, http.StatusOK, response)
+	var songList []domain.Response
+	for _, song := range songs {
+		songList = append(songList, domain.ToResponse(*song))
+	}
+	renderJSON(w, r, http.StatusOK, songList)
 }
 
 func (h *Handler) GetSongByID(w http.ResponseWriter, r *http.Request) {
