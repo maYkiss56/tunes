@@ -14,19 +14,13 @@ var (
 )
 
 type Song struct {
-	ID          int       `json:"id"`
-	Title       string    `json:"title"`
-	FullTitle   string    `json:"full_title"`
-	ImageURL    string    `json:"image_url"`
-	ReleaseDate time.Time `json:"release_date"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
-}
-
-type Filter struct {
-	Title  string `json:"title"`
-	Limit  int    `json:"limit"`
-	Offset int    `json:"offset"`
+	ID          int           `json:"id"`
+	Title       string        `json:"title"`
+	FullTitle   string        `json:"full_title"`
+	ImageURL    string        `json:"image_url"`
+	ReleaseDate time.Time     `json:"release_date"`
+	CreatedAt   time.Duration `json:"created_at"`
+	UpdatedAt   time.Duration `json:"updated_at"`
 }
 
 type CreateSongRequest struct {
@@ -58,13 +52,6 @@ type Response struct {
 	ReleaseDate *time.Time `json:"release_date,omitempty"`
 }
 
-type ListResponse struct {
-	Data   []Response `json:"data"`
-	Total  int        `json:"total"`
-	Limit  int        `json:"limit"`
-	Offset int        `json:"offset"`
-}
-
 func ToResponse(s Song) Response {
 	return Response{
 		ID:          s.ID,
@@ -72,19 +59,5 @@ func ToResponse(s Song) Response {
 		FullTitle:   s.FullTitle,
 		ImageURL:    s.ImageURL,
 		ReleaseDate: &s.ReleaseDate,
-	}
-}
-
-func ToListResponse(songs []Song, total, limit, offset int) ListResponse {
-	data := make([]Response, 0, len(songs))
-	for _, s := range songs {
-		data = append(data, ToResponse(s))
-	}
-
-	return ListResponse{
-		Data:   data,
-		Total:  total,
-		Limit:  limit,
-		Offset: offset,
 	}
 }
