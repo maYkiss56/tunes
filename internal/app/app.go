@@ -8,20 +8,42 @@ import (
 	"github.com/maYkiss56/tunes/internal/delivery/api"
 	"github.com/maYkiss56/tunes/internal/delivery/api/song"
 	"github.com/maYkiss56/tunes/internal/logger"
+	"github.com/maYkiss56/tunes/internal/repository"
 	"github.com/maYkiss56/tunes/internal/server"
+	"github.com/maYkiss56/tunes/internal/service"
+	"github.com/maYkiss56/tunes/pkg/client/postgresql"
 )
 
 type App struct {
 	cfg        *config.Config
 	httpServer *server.HTTPServer
+	db         *postgresql.PgClient
 	logger     *logger.Logger
 }
 
 func New(cfg *config.Config, logger *logger.Logger) (*App, error) {
 
-	//TODO: songS := song.NewService(repo, logger)
+	pgCfg := postgresql.NewPgConfig(
+		cfg.PostgreSQL.Username,
+		cfg.PostgreSQL.Password,
+		cfg.PostgreSQL.Host,
+		cfg.PostgreSQL.Port,
+		cfg.PostgreSQL.Database,
+		cfg.PostgreSQL.SSLMode,
+	)
+	logger.Info("init pgConfig")
+	dbClient, err := postgresql.NewClient(context.Background(), pgCfg)
+	if err != nil {
+		logger.Error("Failed to init database client", "error", err)
+		return nil, fmt.Errorf("db client init failed: %w", err)
+	}
 
-	songHandler := song.NewHandler(nil, logger)
+	logger.Info("try get pool")
+	pool := dbClient.GetPool()
+
+	songRepo := repository.NewSongRepository(pool, logger)
+	songService := service.NewSongService(songRepo, logger)
+	songHandler := song.NewHandler(songService, logger)
 
 	router := api.NewRouter(songHandler, logger)
 
@@ -33,13 +55,15 @@ func New(cfg *config.Config, logger *logger.Logger) (*App, error) {
 
 	return &App{
 		cfg:        cfg,
-		logger:     logger,
 		httpServer: httpServer,
+		db:         dbClient,
+		logger:     logger,
 	}, nil
 }
 
 func (a *App) Run(ctx context.Context) error {
 	defer a.logger.Shutdown()
+	defer a.db.Close()
 
 	a.logger.Info(
 		"Starting application",
