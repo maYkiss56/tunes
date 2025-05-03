@@ -17,6 +17,14 @@ type Config struct {
 		WriteTimeout     time.Duration `yaml:"write_timeout"`
 		GracefullTimeout time.Duration `yaml:"gracefull_timeout"`
 	} `yaml:"http"`
+	PostgreSQL struct {
+		Username string `yaml:"username"`
+		Password string `yaml:"password"`
+		Host     string `yaml:"host"`
+		Port     string `yaml:"port"`
+		Database string `yaml:"database"`
+		SSLMode  string `yaml:"sslmode"`
+	} `yaml:"postgre"`
 }
 
 const configPath = "configs/config.local.yaml"
