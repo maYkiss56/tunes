@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	domain "github.com/maYkiss56/tunes/internal/domain/song"
@@ -68,8 +70,8 @@ func (r *SongRepository) GetAllSongs(ctx context.Context) ([]*domain.Song, error
 			songFullTitle   string
 			songImageURL    string
 			songReleaseDate time.Time
-			songCreatedAt   time.Duration
-			songUpdatedAt   time.Duration
+			songCreatedAt   time.Time
+			songUpdatedAt   time.Time
 		)
 		err = rows.Scan(
 			&songID,
@@ -105,7 +107,38 @@ func (r *SongRepository) GetAllSongs(ctx context.Context) ([]*domain.Song, error
 }
 
 func (r *SongRepository) GetSongByID(ctx context.Context, id int) (*domain.Song, error) {
-	return nil, nil
+	query := `select id, title, full_title, image_url, release_date, created_at, updated_at from song where id=$1`
+
+	var (
+		songID          int
+		songTitle       string
+		songFullTitle   string
+		songImageURL    string
+		songReleaseDate time.Time
+		songCreatedAt   time.Time
+		songUpdatedAt   time.Time
+	)
+
+	err := r.db.QueryRow(ctx, query).
+		Scan(&songID, &songTitle, &songFullTitle, &songImageURL, &songReleaseDate, &songCreatedAt, &songUpdatedAt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			r.logger.Error("song not found", "id", id)
+			return nil, err
+		}
+		r.logger.Error("failed to search song", "error", err)
+		return nil, err
+	}
+
+	return &domain.Song{
+		ID:          songID,
+		Title:       songTitle,
+		FullTitle:   songFullTitle,
+		ImageURL:    songImageURL,
+		ReleaseDate: songReleaseDate,
+		CreatedAt:   songCreatedAt,
+		UpdatedAt:   songUpdatedAt,
+	}, nil
 }
 
 func (r *SongRepository) UpdateSong(
@@ -113,6 +146,27 @@ func (r *SongRepository) UpdateSong(
 	id int,
 	update domain.UpdateSongRequest,
 ) error {
+	query := `update song set title=$1, full_title=$2, image_url=$3, release_date=$4 where id=$5`
+
+	res, err := r.db.Exec(
+		ctx,
+		query,
+		update.Title,
+		update.FullTitle,
+		update.ImageURL,
+		update.ReleaseDate,
+	)
+	if err != nil {
+		r.logger.Error("failed to update song", "id", id, "error", err)
+		return err
+	}
+
+	rowsAffect := res.RowsAffected()
+	if rowsAffect == 0 {
+		r.logger.Info("no updated")
+		return err
+	}
+
 	return nil
 }
 
