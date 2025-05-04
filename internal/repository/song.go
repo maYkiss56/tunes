@@ -3,6 +3,8 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -26,22 +28,22 @@ func NewSongRepository(db *pgxpool.Pool, logger *logger.Logger) *SongRepository 
 
 func (r *SongRepository) CreateSong(ctx context.Context, song *domain.Song) error {
 	query := `insert into song 
-		(id, title, full_title, image_url, release_date, created_at, updated_at)
-		values ($1, $2, $3, $4, $5, $6, $7)`
+		(title, full_title, image_url, release_date, created_at, updated_at)
+		values ($1, $2, $3, $4, $5, $6) returning id`
 
-	_, err := r.db.Exec(
+	err := r.db.QueryRow(
 		ctx,
 		query,
-		song.ID,
 		song.Title,
 		song.FullTitle,
 		song.ImageURL,
 		song.ReleaseDate,
-		song.CreatedAt,
-		song.UpdatedAt,
-	)
+		time.Now(),
+		time.Now(),
+	).Scan(&song.ID)
+
 	if err != nil {
-		r.logger.Error("failed to create song")
+		r.logger.Error("failed to create song", "error", err)
 		return err
 	}
 
@@ -56,7 +58,7 @@ func (r *SongRepository) GetAllSongs(ctx context.Context) ([]*domain.Song, error
 
 	rows, err := r.db.Query(ctx, query)
 	if err != nil {
-		r.logger.Error("failed to get all songs")
+		r.logger.Error("failed to get all songs", "error", err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -83,7 +85,7 @@ func (r *SongRepository) GetAllSongs(ctx context.Context) ([]*domain.Song, error
 			&songUpdatedAt,
 		)
 		if err != nil {
-			r.logger.Error("failed to scan rows")
+			r.logger.Error("failed to scan rows", "error", err)
 			return nil, err
 		}
 
@@ -119,7 +121,7 @@ func (r *SongRepository) GetSongByID(ctx context.Context, id int) (*domain.Song,
 		songUpdatedAt   time.Time
 	)
 
-	err := r.db.QueryRow(ctx, query).
+	err := r.db.QueryRow(ctx, query, id).
 		Scan(&songID, &songTitle, &songFullTitle, &songImageURL, &songReleaseDate, &songCreatedAt, &songUpdatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -146,15 +148,50 @@ func (r *SongRepository) UpdateSong(
 	id int,
 	update domain.UpdateSongRequest,
 ) error {
-	query := `update song set title=$1, full_title=$2, image_url=$3, release_date=$4 where id=$5`
+
+	var fields []string
+	var args []interface{}
+	argPos := 1
+
+	if update.Title != nil {
+		fields = append(fields, fmt.Sprintf("title=$%d", argPos))
+		args = append(args, *update.Title)
+		argPos++
+	}
+
+	if update.FullTitle != nil {
+		fields = append(fields, fmt.Sprintf("full_title=$%d", argPos))
+		args = append(args, *update.FullTitle)
+		argPos++
+	}
+	if update.ImageURL != nil {
+		fields = append(fields, fmt.Sprintf("image_url=$%d", argPos))
+		args = append(args, *update.ImageURL)
+		argPos++
+	}
+	if update.ReleaseDate != nil {
+		fields = append(fields, fmt.Sprintf("release_date=$%d", argPos))
+		args = append(args, *update.ReleaseDate)
+		argPos++
+	}
+
+	if len(fields) == 0 {
+		return nil
+	}
+
+	fields = append(fields, fmt.Sprintf("updated_at=$%d", argPos))
+	args = append(args, time.Now())
+	argPos++
+
+	args = append(args, id)
+	whereClause := fmt.Sprintf("where id=$%d", argPos)
+
+	query := fmt.Sprintf("update song set %s %s", strings.Join(fields, ", "), whereClause)
 
 	res, err := r.db.Exec(
 		ctx,
 		query,
-		update.Title,
-		update.FullTitle,
-		update.ImageURL,
-		update.ReleaseDate,
+		args...,
 	)
 	if err != nil {
 		r.logger.Error("failed to update song", "id", id, "error", err)
