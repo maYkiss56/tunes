@@ -14,13 +14,13 @@ var (
 )
 
 type Song struct {
-	ID          int           `json:"id"`
-	Title       string        `json:"title"`
-	FullTitle   string        `json:"full_title"`
-	ImageURL    string        `json:"image_url"`
-	ReleaseDate time.Time     `json:"release_date"`
-	CreatedAt   time.Duration `json:"created_at"`
-	UpdatedAt   time.Duration `json:"updated_at"`
+	ID          int       `json:"id"`
+	Title       string    `json:"title"`
+	FullTitle   string    `json:"full_title"`
+	ImageURL    string    `json:"image_url"`
+	ReleaseDate time.Time `json:"release_date"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 type CreateSongRequest struct {
