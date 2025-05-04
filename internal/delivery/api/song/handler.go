@@ -148,18 +148,6 @@ func (h *Handler) DeleteSong(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func parseQueryParam(r *http.Request, key string, defaultValue int) int {
-	val := r.URL.Query().Get(key)
-	if val == "" {
-		return defaultValue
-	}
-	result, err := strconv.Atoi(val)
-	if err != nil {
-		return defaultValue
-	}
-	return result
-}
-
 func renderJSON(w http.ResponseWriter, _ *http.Request, status int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
