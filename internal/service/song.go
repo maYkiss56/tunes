@@ -4,6 +4,7 @@ import (
 	"context"
 
 	domain "github.com/maYkiss56/tunes/internal/domain/song"
+	"github.com/maYkiss56/tunes/internal/domain/song/dto"
 	"github.com/maYkiss56/tunes/internal/logger"
 )
 
@@ -11,7 +12,7 @@ type SongRepository interface {
 	CreateSong(ctx context.Context, song *domain.Song) error
 	GetAllSongs(ctx context.Context) ([]*domain.Song, error)
 	GetSongByID(ctx context.Context, id int) (*domain.Song, error)
-	UpdateSong(ctx context.Context, id int, update domain.UpdateSongRequest) error
+	UpdateSong(ctx context.Context, id int, update dto.UpdateSongRequest) error
 	DeleteSong(ctx context.Context, id int) error
 }
 
@@ -46,7 +47,7 @@ func (s *SongService) GetSongByID(ctx context.Context, id int) (*domain.Song, er
 func (s *SongService) UpdateSong(
 	ctx context.Context,
 	id int,
-	update domain.UpdateSongRequest,
+	update dto.UpdateSongRequest,
 ) error {
 	return s.repo.UpdateSong(ctx, id, update)
 }
