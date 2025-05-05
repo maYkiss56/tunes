@@ -5,7 +5,7 @@ import (
 )
 
 func RegisterRoutes(r chi.Router, handler *Handler) {
-	r.Route("/songs", func(r chi.Router) {
+	r.Route("/", func(r chi.Router) {
 		r.Post("/", handler.CreateSong)
 		r.Get("/", handler.GetAllSongs)
 		r.Route("/{id}", func(r chi.Router) {
