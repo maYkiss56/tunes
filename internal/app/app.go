@@ -6,6 +6,7 @@ import (
 
 	"github.com/maYkiss56/tunes/internal/config"
 	"github.com/maYkiss56/tunes/internal/delivery/api"
+	"github.com/maYkiss56/tunes/internal/delivery/api/artist"
 	"github.com/maYkiss56/tunes/internal/delivery/api/song"
 	"github.com/maYkiss56/tunes/internal/logger"
 	"github.com/maYkiss56/tunes/internal/repository"
@@ -41,11 +42,15 @@ func New(cfg *config.Config, logger *logger.Logger) (*App, error) {
 	logger.Info("try get pool")
 	pool := dbClient.GetPool()
 
+	artistRepo := repository.NewArtistRepository(pool, logger)
+	artistService := service.NewArtistService(artistRepo, logger)
+	artistHandler := artist.NewHandler(artistService, logger)
+
 	songRepo := repository.NewSongRepository(pool, logger)
 	songService := service.NewSongService(songRepo, logger)
 	songHandler := song.NewHandler(songService, logger)
 
-	router := api.NewRouter(songHandler, logger)
+	router := api.NewRouter(songHandler, artistHandler, logger)
 
 	httpServer, err := server.NewHTTPServer(cfg, logger, router)
 	if err != nil {
