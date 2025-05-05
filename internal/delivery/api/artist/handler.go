@@ -112,6 +112,11 @@ func (h *Handler) UpdateArtist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := req.Validate(); err != nil {
+		utilites.RenderError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	if err := h.service.UpdateArtist(r.Context(), id, req); err != nil {
 		//TODO: not found err
 		h.logger.Error("failed to update artist", "error", err)
