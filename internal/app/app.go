@@ -6,6 +6,7 @@ import (
 
 	"github.com/maYkiss56/tunes/internal/config"
 	"github.com/maYkiss56/tunes/internal/delivery/api"
+	"github.com/maYkiss56/tunes/internal/delivery/api/album"
 	"github.com/maYkiss56/tunes/internal/delivery/api/artist"
 	"github.com/maYkiss56/tunes/internal/delivery/api/song"
 	"github.com/maYkiss56/tunes/internal/logger"
@@ -46,11 +47,15 @@ func New(cfg *config.Config, logger *logger.Logger) (*App, error) {
 	artistService := service.NewArtistService(artistRepo, logger)
 	artistHandler := artist.NewHandler(artistService, logger)
 
+	albumRepo := repository.NewAlbumRepository(pool, logger)
+	albumService := service.NewAlbumService(albumRepo, logger)
+	albumHandler := album.NewHandler(albumService, logger)
+
 	songRepo := repository.NewSongRepository(pool, logger)
 	songService := service.NewSongService(songRepo, logger)
 	songHandler := song.NewHandler(songService, logger)
 
-	router := api.NewRouter(songHandler, artistHandler, logger)
+	router := api.NewRouter(songHandler, artistHandler, albumHandler, logger)
 
 	httpServer, err := server.NewHTTPServer(cfg, logger, router)
 	if err != nil {
