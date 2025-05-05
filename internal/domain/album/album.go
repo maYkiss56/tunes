@@ -7,10 +7,10 @@ type Album struct {
 	ArtistID int
 }
 
-func NewAlbum(title, imageURL string, artistID int) *Album {
+func NewAlbum(title, imageURL string, artistID int) (*Album, error) {
 	return &Album{
 		Title:    title,
 		ImageURL: imageURL,
 		ArtistID: artistID,
-	}
+	}, nil
 }
