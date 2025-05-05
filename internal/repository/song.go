@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	domain "github.com/maYkiss56/tunes/internal/domain/song"
+	"github.com/maYkiss56/tunes/internal/domain/song/dto"
 	"github.com/maYkiss56/tunes/internal/logger"
 )
 
@@ -146,7 +147,7 @@ func (r *SongRepository) GetSongByID(ctx context.Context, id int) (*domain.Song,
 func (r *SongRepository) UpdateSong(
 	ctx context.Context,
 	id int,
-	update domain.UpdateSongRequest,
+	update dto.UpdateSongRequest,
 ) error {
 
 	var fields []string
