@@ -6,11 +6,13 @@ import (
 	albumHandler "github.com/maYkiss56/tunes/internal/delivery/api/album"
 	artistHandler "github.com/maYkiss56/tunes/internal/delivery/api/artist"
 	songHandler "github.com/maYkiss56/tunes/internal/delivery/api/song"
+	userHandler "github.com/maYkiss56/tunes/internal/delivery/api/user"
 	"github.com/maYkiss56/tunes/internal/logger"
 	"github.com/maYkiss56/tunes/internal/middleware"
 )
 
 func NewRouter(
+	user *userHandler.Handler,
 	song *songHandler.Handler,
 	artist *artistHandler.Handler,
 	album *albumHandler.Handler,
@@ -19,17 +21,34 @@ func NewRouter(
 	r := chi.NewRouter()
 
 	r.Use(middleware.RecoverMiddleware(logger))
+
+	userRouter := chi.NewRouter()
+	userHandler.RegisterRoutes(userRouter, user)
+	r.Mount("/api", userRouter)
+
 	songRouter := chi.NewRouter()
-	songHandler.RegisterRoutes(songRouter, song)
+	songHandler.RegisterPublicRoutes(songRouter, song)
 	r.Mount("/api/songs", songRouter)
 
+	songAdminRouter := chi.NewRouter()
+	songHandler.RegisterAdminRoutes(songAdminRouter, song)
+	r.Mount("/api/admin/songs", songAdminRouter)
+
 	artistRouter := chi.NewRouter()
-	artistHandler.RegisterRoutes(artistRouter, artist)
+	artistHandler.RegisterPublicRoutes(artistRouter, artist)
 	r.Mount("/api/artists", artistRouter)
 
+	artistAdminRouter := chi.NewRouter()
+	artistHandler.RegisterAdminRoutes(artistAdminRouter, artist)
+	r.Mount("/api/admin/artists", artistAdminRouter)
+
 	albumRouter := chi.NewRouter()
-	albumHandler.RegisterRoutes(albumRouter, album)
+	albumHandler.RegisterPublicRoutes(albumRouter, album)
 	r.Mount("/api/albums", albumRouter)
+
+	albumAdminRouter := chi.NewRouter()
+	albumHandler.RegisterAdminRoutes(albumAdminRouter, album)
+	r.Mount("/api/admin/albums", albumAdminRouter)
 
 	return r
 }
