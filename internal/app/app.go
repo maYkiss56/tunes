@@ -9,7 +9,9 @@ import (
 	"github.com/maYkiss56/tunes/internal/delivery/api/album"
 	"github.com/maYkiss56/tunes/internal/delivery/api/artist"
 	"github.com/maYkiss56/tunes/internal/delivery/api/song"
+	"github.com/maYkiss56/tunes/internal/delivery/api/user"
 	"github.com/maYkiss56/tunes/internal/logger"
+	"github.com/maYkiss56/tunes/internal/middleware"
 	"github.com/maYkiss56/tunes/internal/repository"
 	"github.com/maYkiss56/tunes/internal/server"
 	"github.com/maYkiss56/tunes/internal/service"
@@ -43,6 +45,10 @@ func New(cfg *config.Config, logger *logger.Logger) (*App, error) {
 	logger.Info("try get pool")
 	pool := dbClient.GetPool()
 
+	userRepo := repository.NewUserRepository(pool, logger)
+	userService := service.NewUserService(userRepo, logger)
+	userHandler := user.NewHandler(userService, logger)
+
 	artistRepo := repository.NewArtistRepository(pool, logger)
 	artistService := service.NewArtistService(artistRepo, logger)
 	artistHandler := artist.NewHandler(artistService, logger)
@@ -55,9 +61,11 @@ func New(cfg *config.Config, logger *logger.Logger) (*App, error) {
 	songService := service.NewSongService(songRepo, logger)
 	songHandler := song.NewHandler(songService, logger)
 
-	router := api.NewRouter(songHandler, artistHandler, albumHandler, logger)
+	router := api.NewRouter(userHandler, songHandler, artistHandler, albumHandler, logger)
 
-	httpServer, err := server.NewHTTPServer(cfg, logger, router)
+	routerWithCORS := middleware.NewCORSHandler(cfg, router)
+
+	httpServer, err := server.NewHTTPServer(cfg, logger, routerWithCORS)
 	if err != nil {
 		logger.Error("Failed to create HTTP server", "error", err)
 		return nil, fmt.Errorf("http server creation failed: %w", err)
