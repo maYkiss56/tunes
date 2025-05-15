@@ -16,6 +16,12 @@ type Config struct {
 		ReadTimeout      time.Duration `yaml:"read_timeout"`
 		WriteTimeout     time.Duration `yaml:"write_timeout"`
 		GracefullTimeout time.Duration `yaml:"gracefull_timeout"`
+		CORS             struct {
+			AllowedOrigins   []string `yaml:"allowedOrigins"`
+			AllowedMethods   []string `yaml:"allowedMethods"`
+			AllowedHeaders   []string `yaml:"allowedHeaders"`
+			AllowCredentials bool     `yaml:"allowCredentials"`
+		} `yaml:"cors"`
 	} `yaml:"http"`
 	PostgreSQL struct {
 		Username string `yaml:"username"`
