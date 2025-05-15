@@ -6,8 +6,6 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
-
 	"github.com/maYkiss56/tunes/internal/config"
 	"github.com/maYkiss56/tunes/internal/logger"
 )
@@ -17,13 +15,13 @@ type HTTPServer struct {
 	listener net.Listener
 	cfg      *config.Config
 	logger   *logger.Logger
-	router   chi.Router
+	handler  http.Handler
 }
 
 func NewHTTPServer(
 	cfg *config.Config,
 	logger *logger.Logger,
-	router chi.Router,
+	handler http.Handler,
 ) (*HTTPServer, error) {
 	addr := net.JoinHostPort(cfg.HTTP.Host, cfg.HTTP.Port)
 
@@ -34,7 +32,7 @@ func NewHTTPServer(
 
 	server := &http.Server{
 		Addr:         addr,
-		Handler:      router,
+		Handler:      handler,
 		ReadTimeout:  cfg.HTTP.ReadTimeout,
 		WriteTimeout: cfg.HTTP.WriteTimeout,
 	}
