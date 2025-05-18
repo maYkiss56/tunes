@@ -8,6 +8,7 @@ import (
 	"github.com/maYkiss56/tunes/internal/delivery/api"
 	"github.com/maYkiss56/tunes/internal/delivery/api/album"
 	"github.com/maYkiss56/tunes/internal/delivery/api/artist"
+	"github.com/maYkiss56/tunes/internal/delivery/api/genre"
 	"github.com/maYkiss56/tunes/internal/delivery/api/song"
 	"github.com/maYkiss56/tunes/internal/delivery/api/user"
 	"github.com/maYkiss56/tunes/internal/logger"
@@ -61,7 +62,18 @@ func New(cfg *config.Config, logger *logger.Logger) (*App, error) {
 	songService := service.NewSongService(songRepo, logger)
 	songHandler := song.NewHandler(songService, logger)
 
-	router := api.NewRouter(userHandler, songHandler, artistHandler, albumHandler, logger)
+	genreRepo := repository.NewGenreRepository(pool, logger)
+	genreService := service.NewGenreService(genreRepo, logger)
+	genreHandler := genre.NewHandler(genreService, logger)
+
+	router := api.NewRouter(
+		userHandler,
+		songHandler,
+		artistHandler,
+		albumHandler,
+		genreHandler,
+		logger,
+	)
 
 	routerWithCORS := middleware.NewCORSHandler(cfg, router)
 
