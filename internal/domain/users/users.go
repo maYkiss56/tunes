@@ -24,11 +24,10 @@ func NewUser(email, username, password string) (*User, error) {
 		Email:        email,
 		Username:     username,
 		PasswordHash: password,
-		// AvatarURL:    "",
-		// IsBanned:     false,
-		RoleID:    RoleID,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		IsBanned:     false,
+		RoleID:       RoleID,
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
 	}, nil
 }
 
