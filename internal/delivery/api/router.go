@@ -5,6 +5,7 @@ import (
 
 	albumHandler "github.com/maYkiss56/tunes/internal/delivery/api/album"
 	artistHandler "github.com/maYkiss56/tunes/internal/delivery/api/artist"
+	genreHandler "github.com/maYkiss56/tunes/internal/delivery/api/genre"
 	songHandler "github.com/maYkiss56/tunes/internal/delivery/api/song"
 	userHandler "github.com/maYkiss56/tunes/internal/delivery/api/user"
 	"github.com/maYkiss56/tunes/internal/logger"
@@ -16,6 +17,7 @@ func NewRouter(
 	song *songHandler.Handler,
 	artist *artistHandler.Handler,
 	album *albumHandler.Handler,
+	genre *genreHandler.Handler,
 	logger *logger.Logger,
 ) chi.Router {
 	r := chi.NewRouter()
@@ -49,6 +51,14 @@ func NewRouter(
 	albumAdminRouter := chi.NewRouter()
 	albumHandler.RegisterAdminRoutes(albumAdminRouter, album)
 	r.Mount("/api/admin/albums", albumAdminRouter)
+
+	genreRouter := chi.NewRouter()
+	genreHandler.RegisterPublicRoutes(genreRouter, genre)
+	r.Mount("/api/genres", genreRouter)
+
+	genreAdminRouter := chi.NewRouter()
+	genreHandler.RegisterAdminRoutes(genreAdminRouter, genre)
+	r.Mount("/api/admin/genres", genreAdminRouter)
 
 	return r
 }
