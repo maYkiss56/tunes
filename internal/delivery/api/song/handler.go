@@ -49,20 +49,20 @@ func (h *Handler) CreateSong(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newSong := domain.Song{
-		Title:       req.Title,
-		FullTitle:   req.FullTitle,
-		ImageURL:    req.ImageURL,
-		ReleaseDate: req.ReleaseDate,
+	newSong, err := domain.NewSong(req.Title, req.FullTitle, req.ImageURL, req.ReleaseDate)
+	if err != nil {
+		h.logger.Error("invalid input song", "error", err)
+		utilites.RenderError(w, r, http.StatusBadRequest, err.Error())
+		return
 	}
 
-	if err := h.service.CreateSong(r.Context(), &newSong); err != nil {
+	if err := h.service.CreateSong(r.Context(), newSong); err != nil {
 		h.logger.Error("failed to create song", "error", err)
 		utilites.RenderError(w, r, http.StatusInternalServerError, "failed to create song")
 		return
 	}
 
-	utilites.RenderJSON(w, r, http.StatusCreated, dto.ToResponse(newSong))
+	utilites.RenderJSON(w, r, http.StatusCreated, dto.ToResponse(*newSong))
 }
 
 func (h *Handler) GetAllSongs(w http.ResponseWriter, r *http.Request) {
