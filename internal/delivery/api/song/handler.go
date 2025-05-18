@@ -116,12 +116,9 @@ func (h *Handler) UpdateSong(w http.ResponseWriter, r *http.Request) {
 		utilites.RenderError(w, r, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	defer r.Body.Close()
 
 	if err := h.service.UpdateSong(r.Context(), id, req); err != nil {
-		if errors.Is(err, e.ErrNotFound) {
-			utilites.RenderError(w, r, http.StatusNotFound, "song not found")
-			return
-		}
 		h.logger.Error("failed to update song", "error", err)
 		utilites.RenderError(w, r, http.StatusInternalServerError, "failed to update song")
 		return
