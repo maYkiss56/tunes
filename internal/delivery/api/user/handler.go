@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 
+	"github.com/go-chi/chi/v5"
 	"golang.org/x/crypto/bcrypt"
 
 	domain "github.com/maYkiss56/tunes/internal/domain/users"
@@ -18,6 +20,9 @@ type UserService interface {
 	CreateUser(ctx context.Context, user *domain.User) error
 	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
 	GetUserByID(ctx context.Context, id int) (*domain.User, error)
+	UpdateUserAvatar(ctx context.Context, id int, req dto.UpdateAvatarRequest) error
+	UpdateUserPassword(ctx context.Context, id int, req dto.UpdatePasswordRequest) error
+	UpdateUserRequest(ctx context.Context, id int, req dto.UpdateUsersRequest) error
 }
 
 type Handler struct {
@@ -151,4 +156,79 @@ func (h *Handler) LogoutUser(w http.ResponseWriter, r *http.Request) {
 		http.StatusOK,
 		map[string]string{"message": "successfully logged out"},
 	)
+}
+
+func (h *Handler) UpdateUserAvatar(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		h.logger.Error("invalid user id", "error", err)
+		utilites.RenderError(w, r, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	var req dto.UpdateAvatarRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.logger.Error("invalid request body", "error", err)
+		utilites.RenderError(w, r, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	defer r.Body.Close()
+
+	if err := h.service.UpdateUserAvatar(r.Context(), id, req); err != nil {
+		h.logger.Error("failed to update user avatar", "error", err)
+		utilites.RenderError(w, r, http.StatusInternalServerError, "failed to update avatar")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) UpdateUserPassword(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		h.logger.Error("invalid user id", "error", err)
+		utilites.RenderError(w, r, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	var req dto.UpdatePasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.logger.Error("invalid request body", "error", err)
+		utilites.RenderError(w, r, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	defer r.Body.Close()
+
+	if err := h.service.UpdateUserPassword(r.Context(), id, req); err != nil {
+		h.logger.Error("failed to update user password", "error", err)
+		utilites.RenderError(w, r, http.StatusInternalServerError, "failed to update password")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) UpdateUserInfo(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		h.logger.Error("invalid user id", "error", err)
+		utilites.RenderError(w, r, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	var req dto.UpdateUsersRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.logger.Error("invalid request body", "error", err)
+		utilites.RenderError(w, r, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	defer r.Body.Close()
+
+	if err := h.service.UpdateUserRequest(r.Context(), id, req); err != nil {
+		h.logger.Error("failed to update user password", "error", err)
+		utilites.RenderError(w, r, http.StatusInternalServerError, "failed to update password")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
