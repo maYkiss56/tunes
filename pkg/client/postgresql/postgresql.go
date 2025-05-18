@@ -45,15 +45,18 @@ func NewClient(ctx context.Context, cfg *PgConfig) (*PgClient, error) {
 
 	pgxConfig, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
+		log.Printf("failed to parse config: %v", err)
 		return nil, fmt.Errorf("failed to parse config: %v", err)
 	}
 
 	pool, err := pgxpool.NewWithConfig(ctx, pgxConfig)
 	if err != nil {
+		log.Printf("failed to crate pool: %v", err)
 		return nil, fmt.Errorf("failed to create pool: %v", err)
 	}
 
 	if err = pool.Ping(ctx); err != nil {
+		log.Printf("dont connect to db: %v", err)
 		return nil, fmt.Errorf("dont connect to db: %v", err)
 	}
 
@@ -68,4 +71,3 @@ func (c *PgClient) GetPool() *pgxpool.Pool {
 func (c *PgClient) Close() {
 	c.pool.Close()
 }
-
