@@ -44,13 +44,13 @@ func AuthMiddleware(next http.Handler) http.Handler {
 
 func AdminOnlyMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		sess := session.FromContext(r.Context())
-		if sess == nil {
+		s := session.FromContext(r.Context())
+		if s == nil {
 			utilites.RenderError(w, r, http.StatusUnauthorized, "unauthorized: no session found")
 			return
 		}
 
-		if sess.UserRoleID != AdminRoleID {
+		if s.UserRoleID != AdminRoleID {
 			utilites.RenderError(w, r, http.StatusForbidden, "forbidden: insufficient permissions")
 			return
 		}
