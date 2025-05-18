@@ -121,7 +121,7 @@ func (h *Handler) UpdateAlbum(w http.ResponseWriter, r *http.Request) {
 	if err := h.service.UpdateAlbum(r.Context(), id, req); err != nil {
 		//TODO: err not found
 		h.logger.Error("failed to update album", "error", err)
-		utilites.RenderError(w, r, http.StatusInternalServerError, "failed to upfate album")
+		utilites.RenderError(w, r, http.StatusInternalServerError, "failed to update album")
 		return
 	}
 
