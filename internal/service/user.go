@@ -4,6 +4,7 @@ import (
 	"context"
 
 	domain "github.com/maYkiss56/tunes/internal/domain/users"
+	"github.com/maYkiss56/tunes/internal/domain/users/dto"
 	"github.com/maYkiss56/tunes/internal/logger"
 	"github.com/maYkiss56/tunes/internal/utilites"
 )
@@ -12,6 +13,9 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, user *domain.User) error
 	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
 	GetUserByID(ctx context.Context, id int) (*domain.User, error)
+	UpdateUserAvatar(ctx context.Context, id int, req dto.UpdateAvatarRequest) error
+	UpdateUserPassword(ctx context.Context, id int, req dto.UpdatePasswordRequest) error
+	UpdateUserRequest(ctx context.Context, id int, req dto.UpdateUsersRequest) error
 }
 
 type UserService struct {
@@ -58,4 +62,28 @@ func (s *UserService) GetUserByID(ctx context.Context, id int) (*domain.User, er
 		return nil, err
 	}
 	return user, nil
+}
+
+func (s *UserService) UpdateUserAvatar(
+	ctx context.Context,
+	id int,
+	req dto.UpdateAvatarRequest,
+) error {
+	return s.UpdateUserAvatar(ctx, id, req)
+}
+
+func (s *UserService) UpdateUserPassword(
+	ctx context.Context,
+	id int,
+	req dto.UpdatePasswordRequest,
+) error {
+	return s.UpdateUserPassword(ctx, id, req)
+}
+
+func (s *UserService) UpdateUserRequest(
+	ctx context.Context,
+	id int,
+	req dto.UpdateUsersRequest,
+) error {
+	return s.UpdateUserRequest(ctx, id, req)
 }
