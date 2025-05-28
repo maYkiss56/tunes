@@ -27,9 +27,9 @@ func NewGenreRepository(db *pgxpool.Pool, logger *logger.Logger) *GenreRepositor
 }
 
 func (r *GenreRepository) CreateGenre(ctx context.Context, genre *domain.Genre) error {
-	query := `insert ingo genre (title) values ($1) returning id`
+	query := `insert into genre (title, image_url) values ($1, $2) returning id`
 
-	err := r.db.QueryRow(ctx, query, genre.Title).Scan(*&genre.ID)
+	err := r.db.QueryRow(ctx, query, genre.Title, genre.ImageURL).Scan(&genre.ID)
 	if err != nil {
 		r.logger.Error("failed to create genre", "error", err)
 		return err
@@ -39,7 +39,7 @@ func (r *GenreRepository) CreateGenre(ctx context.Context, genre *domain.Genre) 
 }
 
 func (r GenreRepository) GetAllGenre(ctx context.Context) ([]*domain.Genre, error) {
-	query := `select id, title from genre`
+	query := `select id, title, image_url from genre`
 
 	rows, err := r.db.Query(ctx, query)
 	if err != nil {
@@ -52,18 +52,20 @@ func (r GenreRepository) GetAllGenre(ctx context.Context) ([]*domain.Genre, erro
 
 	for rows.Next() {
 		var (
-			genreID    int
-			genreTitle string
+			genreID       int
+			genreTitle    string
+			genreImageURL string
 		)
-		err = rows.Scan(&genreID, &genreTitle)
+		err = rows.Scan(&genreID, &genreTitle, &genreImageURL)
 		if err != nil {
 			r.logger.Error("failed to scan rows", "error", err)
 			return nil, err
 		}
 
 		genreRow := domain.Genre{
-			ID:    genreID,
-			Title: genreTitle,
+			ID:       genreID,
+			Title:    genreTitle,
+			ImageURL: genreImageURL,
 		}
 
 		genres = append(genres, &genreRow)
@@ -76,14 +78,15 @@ func (r GenreRepository) GetAllGenre(ctx context.Context) ([]*domain.Genre, erro
 }
 
 func (r *GenreRepository) GetGenreByID(ctx context.Context, id int) (*domain.Genre, error) {
-	query := `select id, title from genre where id=$1`
+	query := `select id, title, image_url from genre where id=$1`
 
 	var (
-		genreID    int
-		genreTitle string
+		genreID       int
+		genreTitle    string
+		genreImageURL string
 	)
 
-	err := r.db.QueryRow(ctx, query, id).Scan(&genreID, genreTitle)
+	err := r.db.QueryRow(ctx, query, id).Scan(&genreID, &genreTitle, &genreImageURL)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			r.logger.Error("genre not found", "id", id)
@@ -94,8 +97,9 @@ func (r *GenreRepository) GetGenreByID(ctx context.Context, id int) (*domain.Gen
 	}
 
 	return &domain.Genre{
-		ID:    genreID,
-		Title: genreTitle,
+		ID:       genreID,
+		Title:    genreTitle,
+		ImageURL: genreImageURL,
 	}, nil
 }
 
@@ -111,6 +115,12 @@ func (r *GenreRepository) UpdateGenre(
 	if update.Title != nil {
 		fields = append(fields, fmt.Sprintf("title=$%d", argPos))
 		args = append(args, *update.Title)
+		argPos++
+	}
+
+	if update.ImageURl != nil {
+		fields = append(fields, fmt.Sprintf("image_url=$%d", argPos))
+		args = append(args, *update.ImageURl)
 		argPos++
 	}
 
