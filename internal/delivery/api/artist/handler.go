@@ -88,7 +88,6 @@ func (h *Handler) GetArtistByID(w http.ResponseWriter, r *http.Request) {
 
 	a, err := h.service.GetArtistByID(r.Context(), id)
 	if err != nil {
-		//TODO: not found err
 		h.logger.Error("failed to get artist by id", "error", err)
 		utilites.RenderError(w, r, http.StatusInternalServerError, "failed to get artist by id")
 		return
@@ -111,6 +110,7 @@ func (h *Handler) UpdateArtist(w http.ResponseWriter, r *http.Request) {
 		utilites.RenderError(w, r, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	defer r.Body.Close()
 
 	if err := req.Validate(); err != nil {
 		utilites.RenderError(w, r, http.StatusBadRequest, err.Error())
@@ -118,13 +118,19 @@ func (h *Handler) UpdateArtist(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.UpdateArtist(r.Context(), id, req); err != nil {
-		//TODO: not found err
 		h.logger.Error("failed to update artist", "error", err)
 		utilites.RenderError(w, r, http.StatusInternalServerError, "failed to update artist")
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	updatedArtist, err := h.service.GetArtistByID(r.Context(), id)
+	if err != nil {
+		h.logger.Error("failed to get updated artist", "error", err)
+		utilites.RenderError(w, r, http.StatusInternalServerError, "failed to get updated artist")
+		return
+	}
+
+	utilites.RenderJSON(w, r, http.StatusOK, dto.ToResponse(*updatedArtist))
 }
 
 func (h *Handler) DeleteArtist(w http.ResponseWriter, r *http.Request) {
@@ -136,7 +142,6 @@ func (h *Handler) DeleteArtist(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.DeleteArtist(r.Context(), id); err != nil {
-		//TODO: err not found
 		h.logger.Error("failed to delete artist", "error", err)
 		utilites.RenderError(w, r, http.StatusInternalServerError, "failed to delete artist")
 		return
