@@ -1,6 +1,8 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
 
 	albumHandler "github.com/maYkiss56/tunes/internal/delivery/api/album"
@@ -23,6 +25,8 @@ func NewRouter(
 	r := chi.NewRouter()
 
 	r.Use(middleware.RecoverMiddleware(logger))
+
+	r.Mount("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("static/uploads"))))
 
 	userRouter := chi.NewRouter()
 	userHandler.RegisterRoutes(userRouter, user)
