@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	domain "github.com/maYkiss56/tunes/internal/domain/users"
+	"github.com/maYkiss56/tunes/internal/domain/users/dto"
 	"github.com/maYkiss56/tunes/internal/logger"
 )
 
@@ -106,4 +107,28 @@ func (r *UserRepository) GetUserByID(ctx context.Context, id int) (*domain.User,
 		PasswordHash: userPassword,
 		RoleID:       userRoleID,
 	}, nil
+}
+
+func (r *UserRepository) UpdateUserAvatar(
+	ctx context.Context,
+	id int,
+	req dto.UpdateAvatarRequest,
+) error {
+	return nil
+}
+
+func (r *UserRepository) UpdateUserPassword(
+	ctx context.Context,
+	id int,
+	req dto.UpdatePasswordRequest,
+) error {
+	return nil
+}
+
+func (r *UserRepository) UpdateUserRequest(
+	ctx context.Context,
+	id int,
+	req dto.UpdateUsersRequest,
+) error {
+	return nil
 }
