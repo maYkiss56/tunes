@@ -38,8 +38,6 @@ func (r *CreateSongRequest) Validate() error {
 		return errors.New("image_url is required")
 	}
 
-	//TODO: isValidURL
-
 	if r.ReleaseDate.IsZero() {
 		return errors.New("release_date is required")
 	}
@@ -64,8 +62,6 @@ func (r *UpdateSongRequest) Validate() error {
 	if r.FullTitle != nil && len(*r.FullTitle) > maxFullTitleLength {
 		return errors.New("full title is too long")
 	}
-
-	//TODO: isValidURL
 
 	return nil
 }
