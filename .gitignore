@@ -6,6 +6,8 @@
 .a
 .so
 
+/static/
+
 # файлы конфигураций
 config.local.yaml
 .env
