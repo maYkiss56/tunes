@@ -3,7 +3,8 @@ package dto
 import "errors"
 
 type CreateGenreRequest struct {
-	Title string `json:"title"`
+	Title    string `json:"title"`
+	ImageURl string `json:"image_url"`
 }
 
 func (r *CreateGenreRequest) Validate() error {
@@ -14,7 +15,8 @@ func (r *CreateGenreRequest) Validate() error {
 }
 
 type UpdateGenreRequest struct {
-	Title *string `json:"title,omitempty"`
+	Title    *string `json:"title,omitempty"`
+	ImageURl *string `json:"image_url,omitempty"`
 }
 
 func (r *UpdateGenreRequest) Validate() error {
