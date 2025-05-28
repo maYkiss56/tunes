@@ -2,7 +2,6 @@ package genre
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -35,32 +34,53 @@ func NewHandler(service GenreService, logger *logger.Logger) *Handler {
 }
 
 func (h *Handler) CreateGenre(w http.ResponseWriter, r *http.Request) {
-	var req dto.CreateGenreRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.Error("invalid request body", "error", err)
-		utilites.RenderError(w, r, http.StatusBadRequest, "invalid request body")
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		h.logger.Error("failed to parse multipart form", "error", err)
+		utilites.RenderError(w, r, http.StatusBadRequest, "failed to parse form")
 		return
 	}
 
-	if err := req.Validate(); err != nil {
-		utilites.RenderError(w, r, http.StatusBadRequest, err.Error())
+	title := r.FormValue("title")
+	file, header, err := r.FormFile("image")
+	if err != nil {
+		h.logger.Error("failed to get image file", "error", err)
+		utilites.RenderError(w, r, http.StatusBadRequest, "failed to get image")
 		return
 	}
 
-	newGenre, err := domain.NewGenre(req.Title)
+	defer func() {
+		if file != nil {
+			file.Close()
+		}
+	}()
+
+	var imagePath string
+	if file != nil {
+		imagePath, err = utilites.SaveImage(file, header, "static/uploads/genres")
+		if err != nil {
+			h.logger.Error("failed to save image", "error", err)
+			utilites.RenderError(w, r, http.StatusInternalServerError, "failed to save image")
+			return
+		}
+	}
+
+	newGenre, err := domain.NewGenre(title, imagePath)
 	if err != nil {
 		h.logger.Error("invalid input genre", "error", err)
-		utilites.RenderError(w, r, http.StatusBadRequest, err.Error())
+		utilites.RenderError(w, r, http.StatusBadRequest, "invalid input genre")
 		return
 	}
 
 	if err := h.service.CreateGenre(r.Context(), newGenre); err != nil {
-		h.logger.Error("failed to create album", "error", err)
+		h.logger.Error("failed to create genre", "error", err)
 		utilites.RenderError(w, r, http.StatusInternalServerError, "failed to create genre")
 		return
 	}
 
-	utilites.RenderJSON(w, r, http.StatusCreated, dto.ToResponse(*newGenre))
+	res := dto.ToResponse(*newGenre)
+	res.ImageURl = utilites.GetImageURL(imagePath)
+
+	utilites.RenderJSON(w, r, http.StatusCreated, res)
 }
 
 func (h *Handler) GetAllGenre(w http.ResponseWriter, r *http.Request) {
@@ -89,7 +109,6 @@ func (h *Handler) GetGenreByID(w http.ResponseWriter, r *http.Request) {
 
 	g, err := h.service.GetGenreByID(r.Context(), id)
 	if err != nil {
-		//TODO: err not found
 		h.logger.Error("failed to get genre by id", "error", err)
 		utilites.RenderError(w, r, http.StatusInternalServerError, "failed to get genre by id")
 		return
@@ -102,30 +121,50 @@ func (h *Handler) UpdateGenre(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
 		h.logger.Error("invalid genre id", "error", err)
-		utilites.RenderError(w, r, http.StatusBadRequest, "ivnalid genre id")
+		utilites.RenderError(w, r, http.StatusBadRequest, "invalid genre id")
 		return
 	}
 
-	var req dto.UpdateGenreRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.Error("invalid request body", "error", err)
-		utilites.RenderError(w, r, http.StatusBadRequest, "invalid request body")
+	// max 10 MB
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		h.logger.Error("failed to parse form", "error", err)
+		utilites.RenderError(w, r, http.StatusBadRequest, "failed to parse form")
 		return
 	}
 
-	if err := req.Validate(); err != nil {
-		utilites.RenderError(w, r, http.StatusBadRequest, err.Error())
-		return
+	req := dto.UpdateGenreRequest{}
+
+	if title := r.FormValue("title"); title != "" {
+		req.Title = &title
+	}
+
+	file, header, err := r.FormFile("image")
+	if err == nil {
+		defer file.Close()
+
+		imagePath, err := utilites.SaveImage(file, header, "static/uploads/genres")
+		if err != nil {
+			h.logger.Error("failed to save image", "error", err)
+			utilites.RenderError(w, r, http.StatusInternalServerError, "failed to save image")
+			return
+		}
+		req.ImageURl = &imagePath
 	}
 
 	if err := h.service.UpdateGenre(r.Context(), id, req); err != nil {
-		//TODO: err not found
 		h.logger.Error("failed to update genre", "error", err)
 		utilites.RenderError(w, r, http.StatusInternalServerError, "failed to update genre")
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	updatedGenre, err := h.service.GetGenreByID(r.Context(), id)
+	if err != nil {
+		h.logger.Error("failed to get updated genre", "error", err)
+		utilites.RenderError(w, r, http.StatusInternalServerError, "failed to get updated genre")
+		return
+	}
+
+	utilites.RenderJSON(w, r, http.StatusOK, dto.ToResponse(*updatedGenre))
 }
 
 func (h *Handler) DeleteGenre(w http.ResponseWriter, r *http.Request) {
@@ -137,7 +176,6 @@ func (h *Handler) DeleteGenre(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.DeleteGenre(r.Context(), id); err != nil {
-		//TODO: err not found
 		h.logger.Error("failed to delete genre", "error", err)
 		utilites.RenderError(w, r, http.StatusInternalServerError, "failed to delete genre")
 		return
