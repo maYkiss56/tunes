@@ -29,8 +29,8 @@ func NewSongRepository(db *pgxpool.Pool, logger *logger.Logger) *SongRepository 
 
 func (r *SongRepository) CreateSong(ctx context.Context, song *domain.Song) error {
 	query := `insert into song 
-		(title, full_title, image_url, release_date, created_at, updated_at)
-		values ($1, $2, $3, $4, $5, $6) returning id`
+		(title, full_title, image_url, release_date, artist_id, album_id, created_at, updated_at)
+		values ($1, $2, $3, $4, $5, $6, $7, $8) returning id`
 
 	err := r.db.QueryRow(
 		ctx,
@@ -39,6 +39,8 @@ func (r *SongRepository) CreateSong(ctx context.Context, song *domain.Song) erro
 		song.FullTitle,
 		song.ImageURL,
 		song.ReleaseDate,
+		song.ArtistID,
+		song.AlbumID,
 		time.Now(),
 		time.Now(),
 	).Scan(&song.ID)
@@ -53,9 +55,8 @@ func (r *SongRepository) CreateSong(ctx context.Context, song *domain.Song) erro
 
 func (r *SongRepository) GetAllSongs(ctx context.Context) ([]*domain.Song, error) {
 	query := `select id, title, full_title,
-		image_url, release_date, 
-		created_at, updated_at
-		from song`
+		image_url, release_date, artist_id, album_id, 
+		created_at, updated_at from song`
 
 	rows, err := r.db.Query(ctx, query)
 	if err != nil {
@@ -73,6 +74,8 @@ func (r *SongRepository) GetAllSongs(ctx context.Context) ([]*domain.Song, error
 			songFullTitle   string
 			songImageURL    string
 			songReleaseDate time.Time
+			songArtistID    int
+			songAlbumID     int
 			songCreatedAt   time.Time
 			songUpdatedAt   time.Time
 		)
@@ -82,6 +85,8 @@ func (r *SongRepository) GetAllSongs(ctx context.Context) ([]*domain.Song, error
 			&songFullTitle,
 			&songImageURL,
 			&songReleaseDate,
+			&songArtistID,
+			&songAlbumID,
 			&songCreatedAt,
 			&songUpdatedAt,
 		)
@@ -96,6 +101,8 @@ func (r *SongRepository) GetAllSongs(ctx context.Context) ([]*domain.Song, error
 			FullTitle:   songFullTitle,
 			ImageURL:    songImageURL,
 			ReleaseDate: songReleaseDate,
+			ArtistID:    songArtistID,
+			AlbumID:     songAlbumID,
 			CreatedAt:   songCreatedAt,
 			UpdatedAt:   songUpdatedAt,
 		}
@@ -110,7 +117,7 @@ func (r *SongRepository) GetAllSongs(ctx context.Context) ([]*domain.Song, error
 }
 
 func (r *SongRepository) GetSongByID(ctx context.Context, id int) (*domain.Song, error) {
-	query := `select id, title, full_title, image_url, release_date, created_at, updated_at from song where id=$1`
+	query := `select id, title, full_title, image_url, release_date, artist_id, album_id, created_at, updated_at from song where id=$1`
 
 	var (
 		songID          int
@@ -118,12 +125,14 @@ func (r *SongRepository) GetSongByID(ctx context.Context, id int) (*domain.Song,
 		songFullTitle   string
 		songImageURL    string
 		songReleaseDate time.Time
+		songArtistID    int
+		songAlbumID     int
 		songCreatedAt   time.Time
 		songUpdatedAt   time.Time
 	)
 
 	err := r.db.QueryRow(ctx, query, id).
-		Scan(&songID, &songTitle, &songFullTitle, &songImageURL, &songReleaseDate, &songCreatedAt, &songUpdatedAt)
+		Scan(&songID, &songTitle, &songFullTitle, &songImageURL, &songReleaseDate, &songArtistID, &songAlbumID, &songCreatedAt, &songUpdatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			r.logger.Error("song not found", "id", id)
@@ -139,6 +148,8 @@ func (r *SongRepository) GetSongByID(ctx context.Context, id int) (*domain.Song,
 		FullTitle:   songFullTitle,
 		ImageURL:    songImageURL,
 		ReleaseDate: songReleaseDate,
+		ArtistID:    songArtistID,
+		AlbumID:     songAlbumID,
 		CreatedAt:   songCreatedAt,
 		UpdatedAt:   songUpdatedAt,
 	}, nil
@@ -173,6 +184,18 @@ func (r *SongRepository) UpdateSong(
 	if update.ReleaseDate != nil {
 		fields = append(fields, fmt.Sprintf("release_date=$%d", argPos))
 		args = append(args, *update.ReleaseDate)
+		argPos++
+	}
+
+	if update.ArtistID != nil {
+		fields = append(fields, fmt.Sprintf("artist_id=$%d", argPos))
+		args = append(args, *update.ArtistID)
+		argPos++
+	}
+
+	if update.AlbumID != nil {
+		fields = append(fields, fmt.Sprintf("album_id=$%d", argPos))
+		args = append(args, *update.AlbumID)
 		argPos++
 	}
 
