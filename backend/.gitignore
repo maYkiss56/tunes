@@ -1,0 +1,27 @@
+# бинарные файлы
+/bin/
+.exe
+.out
+.o
+.a
+.so
+
+/static/
+
+# файлы конфигураций
+config.local.yaml
+.env
+
+# логи и временные файла
+*.log
+*.tmp
+*.lock
+
+# swagger
+swagger.json
+/docs/
+
+# IDE
+.idea/
+.vscode/
+*.swp
