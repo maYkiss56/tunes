@@ -9,6 +9,8 @@ import (
 func RegisterPublicRoutes(r chi.Router, handler *Handler) {
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handler.GetAllSongs)
+		r.Get("/sorted-by-rating", handler.GetAllSongsSortedByRating)
+		r.Get("/top", handler.GetTopSongs)
 		r.Route("/{id}", func(r chi.Router) {
 			r.Get("/", handler.GetSongByID)
 		})

@@ -10,8 +10,12 @@ import (
 
 type SongRepository interface {
 	CreateSong(ctx context.Context, song *domain.Song) error
-	GetAllSongs(ctx context.Context) ([]*domain.Song, error)
-	GetSongByID(ctx context.Context, id int) (*domain.Song, error)
+	GetSongRating(ctx context.Context, songID int) (int, int, int, error)
+	GetAllSongsSortedByRating(ctx context.Context) ([]dto.Response, error)
+	GetTopSongs(ctx context.Context, timeRange string, limit int) ([]dto.Response, error)
+	GetAllSongs(ctx context.Context) ([]dto.Response, error)
+	GetSongByID(ctx context.Context, id int) (*dto.Response, error)
+	UpdateSongRating(ctx context.Context, songID int) error
 	UpdateSong(ctx context.Context, id int, update dto.UpdateSongRequest) error
 	DeleteSong(ctx context.Context, id int) error
 }
@@ -32,7 +36,19 @@ func (s *SongService) CreateSong(ctx context.Context, song *domain.Song) error {
 	return s.repo.CreateSong(ctx, song)
 }
 
-func (s *SongService) GetAllSongs(ctx context.Context) ([]*domain.Song, error) {
+func (s *SongService) GetSongRating(ctx context.Context, songID int) (int, int, int, error) {
+	return s.repo.GetSongRating(ctx, songID)
+}
+
+func (s *SongService) GetAllSongsSortedByRating(ctx context.Context) ([]dto.Response, error) {
+	return s.repo.GetAllSongsSortedByRating(ctx)
+}
+
+func (s *SongService) GetTopSongs(ctx context.Context, timeRange string, limit int) ([]dto.Response, error) {
+	return s.repo.GetTopSongs(ctx, timeRange, limit)
+}
+
+func (s *SongService) GetAllSongs(ctx context.Context) ([]dto.Response, error) {
 	songs, err := s.repo.GetAllSongs(ctx)
 	if err != nil {
 		return nil, err
@@ -40,8 +56,12 @@ func (s *SongService) GetAllSongs(ctx context.Context) ([]*domain.Song, error) {
 	return songs, nil
 }
 
-func (s *SongService) GetSongByID(ctx context.Context, id int) (*domain.Song, error) {
+func (s *SongService) GetSongByID(ctx context.Context, id int) (*dto.Response, error) {
 	return s.repo.GetSongByID(ctx, id)
+}
+
+func (s *SongService) UpdateSongRating(ctx context.Context, songID int) error {
+	return s.repo.UpdateSongRating(ctx, songID)
 }
 
 func (s *SongService) UpdateSong(

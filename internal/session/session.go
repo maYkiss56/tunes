@@ -26,6 +26,7 @@ func GenerateSession(r *http.Request, u *domain.User, rememberMe bool) (Session,
 		ip = r.RemoteAddr
 	}
 
+	//test 1 * time.Minute
 	expiry := time.Now().Add(24 * time.Hour)
 	if rememberMe {
 		expiry = time.Now().Add(30 * 24 * time.Hour)

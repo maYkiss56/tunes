@@ -5,15 +5,19 @@ import (
 )
 
 type Song struct {
-	ID          int
-	Title       string
-	FullTitle   string
-	ImageURL    string
-	ReleaseDate time.Time
-	ArtistID    int
-	AlbumID     int
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID           int
+	Title        string
+	FullTitle    string
+	ImageURL     string
+	ReleaseDate  time.Time
+	LikeCount    int
+	DislikeCount int
+	Rating       int
+	GenreID      int
+	ArtistID     int
+	AlbumID      int
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 func NewSong(
@@ -21,6 +25,7 @@ func NewSong(
 	fullTitle string,
 	imageURL string,
 	releaseData time.Time,
+	genreID int,
 	artistID int,
 	albumID int,
 ) (*Song, error) {
@@ -29,6 +34,7 @@ func NewSong(
 		FullTitle:   fullTitle,
 		ImageURL:    imageURL,
 		ReleaseDate: releaseData,
+		GenreID:     genreID,
 		ArtistID:    artistID,
 		AlbumID:     albumID,
 		CreatedAt:   time.Now(),

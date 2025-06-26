@@ -9,6 +9,7 @@ import (
 	"github.com/maYkiss56/tunes/internal/delivery/api/album"
 	"github.com/maYkiss56/tunes/internal/delivery/api/artist"
 	"github.com/maYkiss56/tunes/internal/delivery/api/genre"
+	"github.com/maYkiss56/tunes/internal/delivery/api/review"
 	"github.com/maYkiss56/tunes/internal/delivery/api/song"
 	"github.com/maYkiss56/tunes/internal/delivery/api/user"
 	"github.com/maYkiss56/tunes/internal/logger"
@@ -27,7 +28,6 @@ type App struct {
 }
 
 func New(cfg *config.Config, logger *logger.Logger) (*App, error) {
-
 	pgCfg := postgresql.NewPgConfig(
 		cfg.PostgreSQL.Username,
 		cfg.PostgreSQL.Password,
@@ -66,12 +66,17 @@ func New(cfg *config.Config, logger *logger.Logger) (*App, error) {
 	genreService := service.NewGenreService(genreRepo, logger)
 	genreHandler := genre.NewHandler(genreService, logger)
 
+	reviewRepo := repository.NewReviewRepository(pool, logger, userRepo, songRepo)
+	reviewService := service.NewReviewService(reviewRepo, songRepo, logger)
+	reviewHandler := review.NewHandler(reviewService, logger)
+
 	router := api.NewRouter(
 		userHandler,
 		songHandler,
 		artistHandler,
 		albumHandler,
 		genreHandler,
+		reviewHandler,
 		logger,
 	)
 

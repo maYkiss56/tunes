@@ -11,6 +11,7 @@ import (
 
 	domain "github.com/maYkiss56/tunes/internal/domain/album"
 	"github.com/maYkiss56/tunes/internal/domain/album/dto"
+	"github.com/maYkiss56/tunes/internal/domain/artist"
 	"github.com/maYkiss56/tunes/internal/logger"
 )
 
@@ -38,7 +39,6 @@ func (r *AlbumRepository) CreateAlbum(ctx context.Context, album *domain.Album) 
 		album.ImageURL,
 		album.ArtistID,
 	).Scan(&album.ID)
-
 	if err != nil {
 		r.logger.Error("failed to create song", "error", err)
 		return err
@@ -47,8 +47,13 @@ func (r *AlbumRepository) CreateAlbum(ctx context.Context, album *domain.Album) 
 	return nil
 }
 
-func (r *AlbumRepository) GetAllAlbums(ctx context.Context) ([]*domain.Album, error) {
-	query := `select id, title, image_url, artist_id from album`
+func (r *AlbumRepository) GetAllAlbums(ctx context.Context) ([]dto.Response, error) {
+	query := `
+		select a.id, a.title,
+		a.image_url, a.artist_id,
+		ar.id, ar.nickname, ar.bio, ar.country
+		from album a
+		join artist ar on a.artist_id = ar.id`
 
 	rows, err := r.db.Query(ctx, query)
 	if err != nil {
@@ -57,34 +62,29 @@ func (r *AlbumRepository) GetAllAlbums(ctx context.Context) ([]*domain.Album, er
 	}
 	defer rows.Close()
 
-	albums := make([]*domain.Album, 0)
+	albums := make([]dto.Response, 0)
 
 	for rows.Next() {
 		var (
-			albumID       int
-			albumTitle    string
-			albumImageURL string
-			albumArtistID int
+			album  domain.Album
+			artist artist.Artist
 		)
 		err = rows.Scan(
-			&albumID,
-			&albumTitle,
-			&albumImageURL,
-			&albumArtistID,
+			&album.ID,
+			&album.Title,
+			&album.ImageURL,
+			&album.ArtistID,
+			&artist.ID,
+			&artist.Nickname,
+			&artist.BIO,
+			&artist.Country,
 		)
 		if err != nil {
 			r.logger.Error("failed to scan rows", "error", err)
 			return nil, err
 		}
 
-		albumRow := domain.Album{
-			ID:       albumID,
-			Title:    albumTitle,
-			ImageURL: albumImageURL,
-			ArtistID: albumArtistID,
-		}
-
-		albums = append(albums, &albumRow)
+		albums = append(albums, dto.ToResponse(album, artist))
 	}
 	if err = rows.Err(); err != nil {
 		return nil, err
@@ -93,17 +93,26 @@ func (r *AlbumRepository) GetAllAlbums(ctx context.Context) ([]*domain.Album, er
 	return albums, nil
 }
 
-func (r *AlbumRepository) GetAlbumByID(ctx context.Context, id int) (*domain.Album, error) {
-	query := `select id, title, image_url, artist_id from album where id=$1`
+func (r *AlbumRepository) GetAlbumByID(ctx context.Context, id int) (*dto.Response, error) {
+	query := `
+		select a.id, a.title,
+		a.image_url, a.artist_id,
+		ar.id, ar.nickname,
+		ar.bio, ar.country
+		from album a
+		join artist ar on a.artist_id = ar.id
+		where a.id=$1`
 
 	var (
-		albumID       int
-		albumTitle    string
-		albumImageURL string
-		albumArtistID int
+		album  domain.Album
+		artist artist.Artist
 	)
 
-	err := r.db.QueryRow(ctx, query, id).Scan(&albumID, &albumTitle, &albumImageURL, &albumArtistID)
+	err := r.db.QueryRow(ctx, query, id).
+		Scan(&album.ID, &album.Title,
+			&album.ImageURL, &album.ArtistID,
+			&artist.ID, &artist.Nickname, &artist.BIO,
+			&artist.Country)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			r.logger.Error("album not found", "id", id)
@@ -113,12 +122,9 @@ func (r *AlbumRepository) GetAlbumByID(ctx context.Context, id int) (*domain.Alb
 		return nil, err
 	}
 
-	return &domain.Album{
-		ID:       albumID,
-		Title:    albumTitle,
-		ImageURL: albumImageURL,
-		ArtistID: albumArtistID,
-	}, nil
+	res := dto.ToResponse(album, artist)
+
+	return &res, nil
 }
 
 func (r *AlbumRepository) UpdateAlbum(
@@ -174,7 +180,6 @@ func (r *AlbumRepository) UpdateAlbum(
 	}
 
 	return nil
-
 }
 
 func (r *AlbumRepository) DeleteAlbum(ctx context.Context, id int) error {

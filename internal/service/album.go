@@ -10,8 +10,8 @@ import (
 
 type AlbumRepository interface {
 	CreateAlbum(ctx context.Context, album *domain.Album) error
-	GetAllAlbums(ctx context.Context) ([]*domain.Album, error)
-	GetAlbumByID(ctx context.Context, id int) (*domain.Album, error)
+	GetAllAlbums(ctx context.Context) ([]dto.Response, error)
+	GetAlbumByID(ctx context.Context, id int) (*dto.Response, error)
 	UpdateAlbum(ctx context.Context, id int, update dto.UpdateAlbumRequest) error
 	DeleteAlbum(ctx context.Context, id int) error
 }
@@ -32,7 +32,7 @@ func (s *AlbumService) CreateAlbum(ctx context.Context, album *domain.Album) err
 	return s.repo.CreateAlbum(ctx, album)
 }
 
-func (s *AlbumService) GetAllAlbums(ctx context.Context) ([]*domain.Album, error) {
+func (s *AlbumService) GetAllAlbums(ctx context.Context) ([]dto.Response, error) {
 	albums, err := s.repo.GetAllAlbums(ctx)
 	if err != nil {
 		return nil, err
@@ -41,7 +41,7 @@ func (s *AlbumService) GetAllAlbums(ctx context.Context) ([]*domain.Album, error
 	return albums, nil
 }
 
-func (s *AlbumService) GetAlbumByID(ctx context.Context, id int) (*domain.Album, error) {
+func (s *AlbumService) GetAlbumByID(ctx context.Context, id int) (*dto.Response, error) {
 	return s.repo.GetAlbumByID(ctx, id)
 }
 

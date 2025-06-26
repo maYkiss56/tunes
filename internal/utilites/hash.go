@@ -10,3 +10,7 @@ func EncryptString(s string) (string, error) {
 
 	return string(b), nil
 }
+
+func CompareHashAndPassword(hash, password string) error {
+	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+}

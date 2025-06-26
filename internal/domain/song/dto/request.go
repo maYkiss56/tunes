@@ -15,6 +15,7 @@ type CreateSongRequest struct {
 	FullTitle   string    `json:"full_title"`
 	ImageURL    string    `json:"image_url"`
 	ReleaseDate time.Time `json:"release_date"`
+	GenreID     int       `json:"genre_id"`
 	ArtistID    int       `json:"artist_id"`
 	AlbumID     int       `json:"album_id,omitempty"`
 }
@@ -50,6 +51,7 @@ type UpdateSongRequest struct {
 	FullTitle   *string    `json:"full_title,omitempty"`
 	ImageURL    *string    `json:"image_url,omitempty"`
 	ReleaseDate *time.Time `json:"release_date,omitempty"`
+	GenreID     *int       `json:"genre_id,omitempty"`
 	ArtistID    *int       `json:"artist_id,omitempty"`
 	AlbumID     *int       `json:"album_id,omitempty"`
 }

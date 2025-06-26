@@ -7,6 +7,8 @@ import (
 )
 
 func RegisterRoutes(r chi.Router, handler *Handler) {
+	r.Get("/reviewers", handler.GetTopReviewers)
+
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/register", handler.RegisterUser)
 		r.Post("/login", handler.LoginUser)
@@ -16,5 +18,7 @@ func RegisterRoutes(r chi.Router, handler *Handler) {
 		r.Use(middleware.AuthMiddleware)
 		r.Get("/", handler.ProfileUser)
 		r.Post("/logout", handler.LogoutUser)
+		r.Put("/avatar", handler.UpdateUserAvatar)
+		r.Put("/password", handler.UpdateUserPassword)
 	})
 }

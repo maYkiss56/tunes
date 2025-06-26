@@ -21,3 +21,19 @@ func ToResponse(u users.User) Response {
 		RoleID:    u.RoleID,
 	}
 }
+
+type TopResponse struct {
+	ID          int    `json:"id"`
+	Username    string `json:"username"`
+	AvatarURL   string `json:"avatar_url,omitempty"`
+	ReviewCount int    `json:"review_count"`
+}
+
+func ToTopResponse(u users.User, reviewCount int) TopResponse {
+	return TopResponse{
+		ID:          u.ID,
+		Username:    u.Username,
+		AvatarURL:   u.AvatarURL,
+		ReviewCount: reviewCount,
+	}
+}

@@ -105,19 +105,19 @@ func (h *Handler) UpdateArtist(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req dto.UpdateArtistRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	defer r.Body.Close()
+	if err = json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.logger.Error("invalid request body", "error", err)
 		utilites.RenderError(w, r, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	defer r.Body.Close()
 
-	if err := req.Validate(); err != nil {
+	if err = req.Validate(); err != nil {
 		utilites.RenderError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if err := h.service.UpdateArtist(r.Context(), id, req); err != nil {
+	if err = h.service.UpdateArtist(r.Context(), id, req); err != nil {
 		h.logger.Error("failed to update artist", "error", err)
 		utilites.RenderError(w, r, http.StatusInternalServerError, "failed to update artist")
 		return

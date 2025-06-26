@@ -2,14 +2,12 @@ package song
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 
-	e "github.com/maYkiss56/tunes/internal/domain/errors"
 	domain "github.com/maYkiss56/tunes/internal/domain/song"
 	"github.com/maYkiss56/tunes/internal/domain/song/dto"
 	"github.com/maYkiss56/tunes/internal/logger"
@@ -18,8 +16,10 @@ import (
 
 type SongService interface {
 	CreateSong(ctx context.Context, song *domain.Song) error
-	GetAllSongs(ctx context.Context) ([]*domain.Song, error)
-	GetSongByID(ctx context.Context, id int) (*domain.Song, error)
+	GetAllSongsSortedByRating(ctx context.Context) ([]dto.Response, error)
+	GetTopSongs(ctx context.Context, timeRange string, limit int) ([]dto.Response, error)
+	GetAllSongs(ctx context.Context) ([]dto.Response, error)
+	GetSongByID(ctx context.Context, id int) (*dto.Response, error)
 	UpdateSong(ctx context.Context, id int, update dto.UpdateSongRequest) error
 	DeleteSong(ctx context.Context, id int) error
 }
@@ -46,7 +46,6 @@ func (h *Handler) CreateSong(w http.ResponseWriter, r *http.Request) {
 	title := r.FormValue("title")
 	fullTitle := r.FormValue("full_title")
 	file, header, err := r.FormFile("image")
-
 	if err != nil {
 		h.logger.Error("failed to get image file", "error", err)
 		utilites.RenderError(w, r, http.StatusBadRequest, "failed to get image")
@@ -56,16 +55,22 @@ func (h *Handler) CreateSong(w http.ResponseWriter, r *http.Request) {
 	realeseStr := r.FormValue("release_date")
 
 	releaseDate, err := time.Parse(time.RFC3339, realeseStr)
-
 	if err != nil {
 		h.logger.Error("failed to parse release date song", "error", err)
 		utilites.RenderError(w, r, http.StatusBadRequest, "invalid date")
 		return
 	}
 
+	genreIDStr := r.FormValue("genre_id")
+	genreID, err := strconv.Atoi(genreIDStr)
+	if err != nil {
+		h.logger.Error("failed to convert genre_id sring -> int", "error", err)
+		utilites.RenderError(w, r, http.StatusBadRequest, "failed to get genre_id")
+		return
+	}
+
 	artistIDStr := r.FormValue("artist_id")
 	artistID, err := strconv.Atoi(artistIDStr)
-
 	if err != nil {
 		h.logger.Error("failed to convert artist_ID string -> int", "error", err)
 		utilites.RenderError(w, r, http.StatusBadRequest, "failed to get artist_id")
@@ -74,7 +79,6 @@ func (h *Handler) CreateSong(w http.ResponseWriter, r *http.Request) {
 
 	albumIDStr := r.FormValue("album_id")
 	albumID, err := strconv.Atoi(albumIDStr)
-
 	if err != nil {
 		h.logger.Error("failed to convert artist_ID string -> int", "error", err)
 		utilites.RenderError(w, r, http.StatusBadRequest, "failed to get artist_id")
@@ -98,8 +102,7 @@ func (h *Handler) CreateSong(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	newSong, err := domain.NewSong(title, fullTitle, imagePath, releaseDate, artistID, albumID)
-
+	newSong, err := domain.NewSong(title, fullTitle, imagePath, releaseDate, genreID, artistID, albumID)
 	if err != nil {
 		h.logger.Error("invalid input song", "error", err)
 		utilites.RenderError(w, r, http.StatusBadRequest, "invalid unput song")
@@ -112,10 +115,53 @@ func (h *Handler) CreateSong(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := dto.ToResponse(*newSong)
+	res := *newSong
 	res.ImageURL = utilites.GetImageURL(imagePath)
 
 	utilites.RenderJSON(w, r, http.StatusCreated, res)
+}
+
+func (h *Handler) GetAllSongsSortedByRating(w http.ResponseWriter, r *http.Request) {
+	songs, err := h.service.GetAllSongsSortedByRating(r.Context())
+	if err != nil {
+		h.logger.Error("failed to get songs sorted by rating", "error", err)
+		utilites.RenderError(w, r, http.StatusInternalServerError, "failed to get songs")
+		return
+	}
+
+	songList := make([]dto.Response, 0, len(songs))
+	for _, song := range songs {
+		songList = append(songList, song)
+	}
+	utilites.RenderJSON(w, r, http.StatusOK, songList)
+}
+
+func (h *Handler) GetTopSongs(w http.ResponseWriter, r *http.Request) {
+	timeRange := r.URL.Query().Get("time_range")
+	if timeRange == "" {
+		timeRange = "all"
+	}
+
+	limitStr := r.URL.Query().Get("limit")
+	limit := 100
+	if limitStr != "" {
+		var err error
+		limit, err = strconv.Atoi(limitStr)
+		if err != nil {
+			h.logger.Error("invalid limit parameter", "error", err)
+			utilites.RenderError(w, r, http.StatusBadRequest, "invalid limit parameter")
+			return
+		}
+	}
+
+	songs, err := h.service.GetTopSongs(r.Context(), timeRange, limit)
+	if err != nil {
+		h.logger.Error("failed to get top songs", "error", err)
+		utilites.RenderError(w, r, http.StatusInternalServerError, "failed to get top songs")
+		return
+	}
+
+	utilites.RenderJSON(w, r, http.StatusOK, songs)
 }
 
 func (h *Handler) GetAllSongs(w http.ResponseWriter, r *http.Request) {
@@ -128,7 +174,7 @@ func (h *Handler) GetAllSongs(w http.ResponseWriter, r *http.Request) {
 
 	songList := make([]dto.Response, 0, len(songs))
 	for _, song := range songs {
-		songList = append(songList, dto.ToResponse(*song))
+		songList = append(songList, song)
 	}
 	utilites.RenderJSON(w, r, http.StatusOK, songList)
 }
@@ -143,16 +189,12 @@ func (h *Handler) GetSongByID(w http.ResponseWriter, r *http.Request) {
 
 	s, err := h.service.GetSongByID(r.Context(), id)
 	if err != nil {
-		if errors.Is(err, e.ErrNotFound) {
-			utilites.RenderError(w, r, http.StatusNotFound, "song not found")
-			return
-		}
 		h.logger.Error("failed to get song", "error", err)
 		utilites.RenderError(w, r, http.StatusInternalServerError, "failed to get song")
 		return
 	}
 
-	utilites.RenderJSON(w, r, http.StatusOK, dto.ToResponse(*s))
+	utilites.RenderJSON(w, r, http.StatusOK, *s)
 }
 
 func (h *Handler) UpdateSong(w http.ResponseWriter, r *http.Request) {
@@ -164,7 +206,7 @@ func (h *Handler) UpdateSong(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// max 10 MB
-	if err := r.ParseMultipartForm(10 << 20); err != nil {
+	if err = r.ParseMultipartForm(10 << 20); err != nil {
 		h.logger.Error("failed to parse form", "error", err)
 		utilites.RenderError(w, r, http.StatusBadRequest, "failed to parse form")
 		return
@@ -198,6 +240,16 @@ func (h *Handler) UpdateSong(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		req.ImageURL = &imagePath
+	}
+
+	if genreIDstr := r.FormValue("genre_id"); genreIDstr != "" {
+		genreID, err := strconv.Atoi(genreIDstr)
+		if err != nil {
+			h.logger.Error("failed to convert genreID string -> int")
+			utilites.RenderError(w, r, http.StatusInternalServerError, "failed to get genre_id")
+			return
+		}
+		req.GenreID = &genreID
 	}
 
 	if artistIDStr := r.FormValue("artist_id"); artistIDStr != "" {
@@ -234,7 +286,7 @@ func (h *Handler) UpdateSong(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utilites.RenderJSON(w, r, http.StatusOK, dto.ToResponse(*updatedSong))
+	utilites.RenderJSON(w, r, http.StatusOK, *updatedSong)
 }
 
 func (h *Handler) DeleteSong(w http.ResponseWriter, r *http.Request) {
@@ -246,10 +298,6 @@ func (h *Handler) DeleteSong(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.DeleteSong(r.Context(), id); err != nil {
-		if errors.Is(err, e.ErrNotFound) {
-			utilites.RenderError(w, r, http.StatusNotFound, "song not found")
-			return
-		}
 		h.logger.Error("failed to delete song", "error", err)
 		utilites.RenderError(w, r, http.StatusInternalServerError, "failed to delete song")
 		return

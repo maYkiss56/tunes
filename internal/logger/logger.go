@@ -4,6 +4,9 @@ import (
 	"context"
 	"log/slog"
 	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
 	"sync"
 	"time"
 )
@@ -13,6 +16,24 @@ type Logger struct {
 	file    *slog.Logger
 	queue   chan slog.Record
 	wg      sync.WaitGroup
+}
+
+func getCallerInfo() (file string, line int) {
+	// 4 означает глубина стека вызовов:
+	// 0 - runtime.Caller
+	// 1 - getCallerInfo
+	// 2 - метод логгера (Debug/Info/Error)
+	// 3 - место, где вызвали логгер
+	_, file, line, _ = runtime.Caller(3)
+
+	// Укорачиваем путь до файла (убираем часть пути до проекта)
+	if idx := strings.Index(file, "tunes/"); idx != -1 {
+		file = file[idx+len("tunes/"):]
+	} else {
+		file = filepath.Base(file)
+	}
+
+	return file, line
 }
 
 func New(ctx context.Context, logFilePath string) (*Logger, error) {
@@ -61,6 +82,8 @@ func (l *Logger) proccessLogs(ctx context.Context) {
 }
 
 func (l *Logger) Debug(msg string, args ...any) {
+	file, line := getCallerInfo()
+	args = append(args, "file", file, "line", line)
 	l.queue <- l.newRecord(slog.LevelDebug, msg, args...)
 }
 
@@ -69,6 +92,8 @@ func (l *Logger) Info(msg string, args ...any) {
 }
 
 func (l *Logger) Error(msg string, args ...any) {
+	file, line := getCallerInfo()
+	args = append(args, "file", file, "line", line)
 	l.queue <- l.newRecord(slog.LevelError, msg, args...)
 }
 
@@ -92,4 +117,3 @@ func (l *Logger) Shutdown() {
 	close(l.queue)
 	l.wg.Wait()
 }
-

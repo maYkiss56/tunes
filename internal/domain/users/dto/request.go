@@ -58,6 +58,7 @@ func (r *UpdateAvatarRequest) Validate() error {
 }
 
 type UpdatePasswordRequest struct {
+	OldPassword string `json:"old_password"`
 	NewPassword string `json:"new_password"`
 }
 
@@ -72,14 +73,17 @@ func (r *UpdatePasswordRequest) Validate() error {
 }
 
 type UpdateUsersRequest struct {
-	Email     *string `json:"email,omitempty"`
-	Username  *string `json:"username,omitempty"`
-	AvatarURL *string `json:"avatar_url,omitempty"`
+	Email    *string `json:"email,omitempty"`
+	Username *string `json:"username,omitempty"`
 }
 
 func (r *UpdateUsersRequest) Validate() error {
 	if r.Email != nil && len(*r.Email) > 150 {
 		return errors.New("email is too long")
+	}
+
+	if r.Username != nil && len(*r.Username) > 150 {
+		return errors.New("username is too long")
 	}
 
 	return nil

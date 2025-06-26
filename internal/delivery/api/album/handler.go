@@ -15,8 +15,8 @@ import (
 
 type AlbumService interface {
 	CreateAlbum(ctx context.Context, album *domain.Album) error
-	GetAllAlbums(ctx context.Context) ([]*domain.Album, error)
-	GetAlbumByID(ctx context.Context, id int) (*domain.Album, error)
+	GetAllAlbums(ctx context.Context) ([]dto.Response, error)
+	GetAlbumByID(ctx context.Context, id int) (*dto.Response, error)
 	UpdateAlbum(ctx context.Context, id int, update dto.UpdateAlbumRequest) error
 	DeleteAlbum(ctx context.Context, id int) error
 }
@@ -84,7 +84,7 @@ func (h *Handler) CreateAlbum(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := dto.ToResponse(*newAlbum)
+	res := *newAlbum
 	res.ImageURL = utilites.GetImageURL(imagePath)
 
 	utilites.RenderJSON(w, r, http.StatusCreated, res)
@@ -100,7 +100,7 @@ func (h *Handler) GetAllAlbums(w http.ResponseWriter, r *http.Request) {
 
 	albumsList := make([]dto.Response, 0, len(albums))
 	for _, album := range albums {
-		albumsList = append(albumsList, dto.ToResponse(*album))
+		albumsList = append(albumsList, album)
 	}
 
 	utilites.RenderJSON(w, r, http.StatusOK, albumsList)
@@ -121,7 +121,7 @@ func (h *Handler) GetAlbumByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utilites.RenderJSON(w, r, http.StatusOK, dto.ToResponse(*a))
+	utilites.RenderJSON(w, r, http.StatusOK, *a)
 }
 
 func (h *Handler) UpdateAlbum(w http.ResponseWriter, r *http.Request) {
@@ -182,7 +182,7 @@ func (h *Handler) UpdateAlbum(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utilites.RenderJSON(w, r, http.StatusOK, dto.ToResponse(*updatedUlbum))
+	utilites.RenderJSON(w, r, http.StatusOK, *updatedUlbum)
 }
 
 func (h *Handler) DeleteAlbum(w http.ResponseWriter, r *http.Request) {
